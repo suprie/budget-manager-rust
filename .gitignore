@@ -1,0 +1,19 @@
+# Rust build output
+target/
+
+# Node/TS frontend build output
+node_modules/
+dist/
+
+# Tauri
+budget-manager/src-tauri/gen/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
