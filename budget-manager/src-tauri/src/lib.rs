@@ -1,7 +1,7 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use std::path::Path;
 use tauri::AppHandle;
-use statement_core:: { TransactionLine, TrxType };
+use statement_core:: TransactionLine;
 
 mod db;
 mod transactions;
@@ -40,6 +40,15 @@ fn reset_db(app_handle: AppHandle) {
 }
 
 #[tauri::command]
+fn load_transactions(app_handle: AppHandle) -> Result<transactions::TransactionSummary, String> {
+   let mut conn = db::open_database(app_handle)?;
+   let result = transactions::load_data(&mut conn)?;
+
+   println!("Result {:?}",result);
+   return Ok(result)
+}
+
+#[tauri::command]
 fn list_transactions(app_handle: AppHandle) -> Result<Vec<transactions::StoredTransaction>, String> {
    let mut conn = db::open_database(app_handle)?;
    let result = transactions::read_all_transactions(&mut conn)?;
@@ -57,7 +66,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             read_statement_file,
             reset_db,
-            list_transactions
+            list_transactions,
+            load_transactions
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

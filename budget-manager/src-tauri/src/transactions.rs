@@ -9,6 +9,13 @@ pub struct StoredTransaction {
     trx_type: String
 }
 
+#[derive(Debug, serde::Serialize)]
+pub struct TransactionSummary {
+    total_income: f64,
+    total_expenses: f64,
+    transactions: Vec<StoredTransaction>
+}
+
 pub fn insert_transactions(
     conn: &mut Connection,
     transactions: &[TransactionLine],
@@ -37,6 +44,40 @@ pub fn insert_transactions(
     }
     tx.commit().map_err(|error| error.to_string())?;
     Ok(transactions.len())
+} 
+
+pub fn load_data(conn: &mut Connection) -> Result<TransactionSummary, String> {
+    let mut stmt = conn.prepare("SELECT trx_date, description, amount, trx_type from transactions").map_err(|error| error.to_string())?;
+    let iter = stmt.query_map([], |row| {
+        Ok(StoredTransaction {
+            trx_date: row.get(0)?,
+            description: row.get(1)?,
+            amount: row.get(2)?,
+            trx_type: row.get(3)?,
+        })
+    }).map_err(|error| error.to_string())?;
+
+    let mut transactions = Vec::new();
+    let mut total_income = 0.0;
+    let mut total_expenses = 0.0;
+    for row in iter {
+        let temp_row = row.map_err(|error| error.to_string())?;
+        println!("row {:?}", temp_row);
+
+        if temp_row.trx_type == "CR" {
+            total_income = total_income + temp_row.amount
+        } else {
+            total_expenses = total_expenses + temp_row.amount
+        }
+        transactions.push(temp_row);
+    }
+
+    Ok(TransactionSummary {
+        total_income: total_income,
+        total_expenses: total_expenses,
+        transactions
+    })
+
 }
 
 pub fn read_all_transactions(conn: &mut Connection) -> Result<Vec<StoredTransaction>, String> {

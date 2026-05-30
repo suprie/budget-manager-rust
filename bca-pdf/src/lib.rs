@@ -23,7 +23,7 @@ pub fn parse_pdf_file(file_path: &str) -> Result<Vec<TransactionLine>, Box<dyn E
             should_pick = true;
             i += 1;
             continue;
-        }
+       }
 
         if is_page_marker_prefix(&tmp_line) {
             i += 1;

@@ -3,7 +3,6 @@ use csv::{Reader, StringRecord};
 
 use std::error::Error;
 use serde::{Serialize, Deserialize};
-use serde_json;
 use statement_core:: { TransactionLine, TrxType as StatementCoreTrxType };
 
 #[derive(Debug, Deserialize, Serialize)]

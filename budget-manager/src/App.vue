@@ -2,6 +2,7 @@
 import { onMounted, ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
+
 type Transaction = {
   id: number;
   trx_date: string;
@@ -10,9 +11,16 @@ type Transaction = {
   trx_type: "CR" | "DB"
 }
 
+type TransactionSummary = {
+  total_income: number;
+  total_expenses: number;
+  transactions: Transaction[];
+}
+
 const filePath = ref("");
 const errorMessage = ref("");
 const transactions = ref<Transaction[]>([]);
+const transactionSummary = ref<TransactionSummary>();
 
   const columns = [
     { title: "Date", dataIndex: "trx_date", key: "trx_date" },
@@ -29,7 +37,7 @@ const transactions = ref<Transaction[]>([]);
   });
 
 async function loadTransaction() {
-  transactions.value = await invoke<Transaction[]>("list_transactions")
+  transactionSummary.value = await invoke<TransactionSummary>("load_transactions")
 }
 
 async function uploadFile() {
@@ -58,6 +66,7 @@ async function uploadFile() {
     filePath.value = await invoke<string>("read_statement_file", {
       filepath: selectedFile,
     });
+    await loadTransaction();
   } catch (error) {
     errorMessage.value = String(error);
   }
@@ -65,7 +74,8 @@ async function uploadFile() {
 
 async function resetDB() {
   try {
-    await invoke("reset_db")
+    await invoke("reset_db");
+    await loadTransaction();
   } catch (error) {
     errorMessage.value = String(error);
   }
@@ -76,12 +86,17 @@ onMounted(loadTransaction);
 
 <template>
   <main class="container">
-    <h1>Welcome to Tauri + Vue</h1>
-    <a-button  @click="uploadFile">
-      Pick Statement file
-    </a-button>
+    <div class="summary" v-if="transactionSummary">
+      <span>Income: <strong class="income">{{ formatAmount.format(transactionSummary.total_income) }}</strong></span>
+      <span>Expenses: <strong class="expenses">{{ formatAmount.format(transactionSummary.total_expenses) }}</strong></span>
+    </div>
 
-    <a-table v-if="transactions.length" :data-source="transactions" :columns="columns" rowKey="id">
+    <div class="actions">
+      <a-button class="action-btn" @click="uploadFile">Pick Statement file</a-button>
+      <a-button class="action-btn" @click="resetDB" :danger="true" :variant="solid">Reset Database</a-button>
+    </div>
+
+    <a-table v-if="transactionSummary?.transactions?.length" :data-source="transactionSummary.transactions" :columns="columns" rowKey="id">
       <template #bodyCell="{ column, record }">
         <span v-if="column.dataIndex == 'amount'" :class="'amount'"> {{ formatAmount.format(record.amount )}}</span>
         <span v-else-if="column.dataIndex === 'trx_type'" :class="['trx-type', record.trx_type.toLowerCase()]">
@@ -97,6 +112,33 @@ onMounted(loadTransaction);
 </template>
 
 <style scoped>
+.summary {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.summary .income {
+  color: #16a34a;
+}
+
+.summary .expenses {
+  color: #dc2626;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.action-btn {
+  min-width: 160px;
+}
+
 .logo.vite:hover {
   filter: drop-shadow(0 0 2em #747bff);
 }
