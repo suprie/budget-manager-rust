@@ -1,5 +1,6 @@
 [workspace]
 members = [
-    "bca-csv"
-, "bca-pdf"
-, "budget-manager/src-tauri"]
+    "bca-csv", 
+    "bca-pdf",
+    "statement-core",
+    "budget-manager/src-tauri"]

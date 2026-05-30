@@ -14,7 +14,7 @@ pub fn open_database(app_handle: AppHandle) -> Result<Connection, String> {
 
 pub fn reset_db(app_handle: AppHandle) -> Result<(), String> {
     let path = database_path(app_handle)?;
-    fs::remove_file(path).map_err(|error| error.to_string());
+    fs::remove_file(path).map_err(|error| error.to_string())?;
     println!("Database is deleted");
     
     Ok(())

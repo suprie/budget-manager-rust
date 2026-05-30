@@ -25,4 +25,5 @@ serde_json = "1"
 tauri-plugin-dialog = "2"
 bca-csv = { path = "../../bca-csv" }
 bca-pdf = { path = "../../bca-pdf" }
+statement-core = { path = "../../statement-core/" }
 rusqlite = { version = "0.32", features = ["bundled"] }

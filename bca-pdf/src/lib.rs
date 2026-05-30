@@ -2,20 +2,7 @@ use once_cell::sync::Lazy;
 use pdf_extract::extract_text;
 use regex::Regex;
 use std::error::Error;
-
-#[derive(Debug, PartialEq)]
-pub enum TrxType {
-    CR,
-    DB,
-}
-
-#[derive(Debug)]
-pub struct TransactionLine {
-    pub trx_date: String,
-    pub description: String,
-    pub amount: f64,
-    pub trx_type: TrxType,
-}
+use statement_core::{ TransactionLine, TrxType };
 
 const REG_STRING: &str = r"^(?<Date>\d{2}\/\d{2}|PEND)\s+(?<Description>.+?)[ \t]+(?<Amount>[\d,.]+)(?:\s+(?<Type>CR|DB))?(?: +(?<Balance>[\d,.]+))?$";
 static TRANSACTION_RE: Lazy<Regex> = Lazy::new(|| Regex::new(REG_STRING).unwrap());
@@ -31,6 +18,7 @@ pub fn parse_pdf_file(file_path: &str) -> Result<Vec<TransactionLine>, Box<dyn E
 
     while i < lines.len() {
         let tmp_line = lines[i].trim();
+        println!("line {:} : {:}", i, tmp_line);
         if is_table_header(&tmp_line) {
             should_pick = true;
             i += 1;

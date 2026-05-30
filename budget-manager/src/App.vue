@@ -2,7 +2,6 @@
 import { onMounted, ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-
 type Transaction = {
   id: number;
   trx_date: string;
@@ -14,6 +13,13 @@ type Transaction = {
 const filePath = ref("");
 const errorMessage = ref("");
 const transactions = ref<Transaction[]>([]);
+
+  const columns = [
+    { title: "Date", dataIndex: "trx_date", key: "trx_date" },
+    { title: "Description", dataIndex: "description", key: "description" },
+    { title: "Amount", dataIndex: "amount", key: "amount" },
+    { title: "Type", dataIndex: "trx_type", key: "trx_type" },
+  ];
 
   const formatAmount = new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -71,29 +77,18 @@ onMounted(loadTransaction);
 <template>
   <main class="container">
     <h1>Welcome to Tauri + Vue</h1>
-    <button  @click="uploadFile">
+    <a-button  @click="uploadFile">
       Pick Statement file
-    </button>
+    </a-button>
 
-    <table v-if="transactions.length">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Description</th>
-          <th>Amount</th>
-          <th>Type</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr v-for="transaction in transactions" :key="transaction.id">
-          <td class="trx-date">{{ transaction.trx_date }}</td>
-          <td class="description">{{ transaction.description }}</td>
-          <td class="amount description">{{ formatAmount.format(transaction.amount) }}</td>
-          <td :class="['trx-type', transaction.trx_type.toLowerCase()]">{{ transaction.trx_type }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <a-table v-if="transactions.length" :data-source="transactions" :columns="columns" rowKey="id">
+      <template #bodyCell="{ column, record }">
+        <span v-if="column.dataIndex == 'amount'" :class="'amount'"> {{ formatAmount.format(record.amount )}}</span>
+        <span v-else-if="column.dataIndex === 'trx_type'" :class="['trx-type', record.trx_type.toLowerCase()]">
+          {{ record.trx_type }}
+        </span>
+      </template>
+    </a-table>
     <button  @click="resetDB">
       Reset Database
     </button>
@@ -145,8 +140,6 @@ onMounted(loadTransaction);
 }
 
 :root {
-  font-family: Inter, Arial;
-  font-size: 16px;
   line-height: 24px;
   font-weight: 400;
 
@@ -160,9 +153,14 @@ onMounted(loadTransaction);
   -webkit-text-size-adjust: 100%;
 }
 
-.amount {
+.a-table .amount {
     font-family: "IBMPlex Mono", monospace;
     font-variant-numeric: tabular-nums;
+}
+
+body {
+  font-family: Inter, Arial;
+  font-size: 16px;
 }
 
 .container {

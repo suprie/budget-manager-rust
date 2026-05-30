@@ -1,6 +1,7 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use std::path::Path;
 use tauri::AppHandle;
+use statement_core:: { TransactionLine, TrxType };
 
 mod db;
 mod transactions;
@@ -13,21 +14,29 @@ fn read_statement_file(app_handle: AppHandle, filepath: String) -> Result<String
         .map(|extension| extension.to_lowercase())
         .ok_or_else(|| "Selected file has no extension".to_string())?;
     match extension.as_str() {
-        "csv" => bca_csv::parse_csv_file(&filepath).map_err(|error| error.to_string()),
+        "csv" => {
+            let transactions = bca_csv::parse_csv_file(&filepath).map_err(|error| error.to_string())?;
+            println!("tranactions {:?}",transactions);
+            insert_transactions(app_handle, &transactions)
+        }
         "pdf" => {
             let transactions =
                 bca_pdf::parse_pdf_file(&filepath).map_err(|error| error.to_string())?;
-            let mut conn = db::open_database(app_handle)?;
-            let size = transactions::insert_transactions(&mut conn, &transactions)?;
-            Ok(format!("Transaction Size {:?}",  size))
+            insert_transactions(app_handle, &transactions)
         }
         _ => Err(format!("Unsupported statement file type: {extension}")),
     }
 }
 
+fn insert_transactions(app_handle: AppHandle, transactions: &Vec<TransactionLine>) -> Result<String, String> {
+    let mut conn = db::open_database(app_handle)?;
+    let size = transactions::insert_transactions(&mut conn, &transactions)?;
+    Ok(format!("Transaction Size {:?}",  size))
+}
+
 #[tauri::command]
 fn reset_db(app_handle: AppHandle) {
-    db::reset_db(app_handle);
+    let _ = db::reset_db(app_handle);
 }
 
 #[tauri::command]

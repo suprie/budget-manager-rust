@@ -7,3 +7,4 @@ edition = "2024"
 pdf-extract = "0.9.0"
 regex = "1.12.3"
 once_cell = "1.21.4"
+statement-core = { path = "../statement-core" }

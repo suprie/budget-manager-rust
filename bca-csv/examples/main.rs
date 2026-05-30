@@ -11,6 +11,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let file_path = &args[1];
 
     let result = parse_csv_file(&file_path)?;
-    println!("{}", result);
+    println!("{:?}", result);
     Ok(())
 }

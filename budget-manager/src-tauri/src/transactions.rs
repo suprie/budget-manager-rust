@@ -1,4 +1,4 @@
-use bca_pdf::{TransactionLine, TrxType};
+use statement_core::{TransactionLine, TrxType};
 use rusqlite::{params, Connection};
 
 #[derive(Debug, serde::Serialize)]
@@ -35,7 +35,7 @@ pub fn insert_transactions(
             .map_err(|error| error.to_string())?;
         }
     }
-    tx.commit().map_err(|error| error.to_string());
+    tx.commit().map_err(|error| error.to_string())?;
     Ok(transactions.len())
 }
 

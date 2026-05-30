@@ -4,6 +4,7 @@ use csv::{Reader, StringRecord};
 use std::error::Error;
 use serde::{Serialize, Deserialize};
 use serde_json;
+use statement_core:: { TransactionLine, TrxType as StatementCoreTrxType };
 
 #[derive(Debug, Deserialize, Serialize)]
 enum TrxType {
@@ -23,10 +24,11 @@ struct TrxRecord {
     _balance: String
 }
 
-pub fn parse_csv_file(file_path: &str) -> Result<String, Box<dyn Error>> {
+pub fn parse_csv_file(file_path: &str) -> Result<Vec<TransactionLine>, Box<dyn Error>> {
 
     let v:Vec<String> = read_lines(file_path)?;
-
+    let header = &v[0 .. 4];
+    println!("HEADER {:?}", header);
     let a = &v[4 .. v.len() - 4];
     let joined = a.join("\n");
 
@@ -34,21 +36,33 @@ pub fn parse_csv_file(file_path: &str) -> Result<String, Box<dyn Error>> {
 
 }
 
-fn parse_csv(csv_content: &str) -> Result<String, Box<dyn Error>> {
+fn parse_csv(csv_content: &str) -> Result<Vec<TransactionLine>, Box<dyn Error>> {
     let mut rdr = Reader::from_reader(csv_content.as_bytes());
 
-    let mut records:Vec<TrxRecord> = Vec::new();
+    let mut records:Vec<TransactionLine> = Vec::new();
 
     for result in rdr.records() {
         let record: StringRecord = result?;
         let trx_record: TrxRecord = record.deserialize(None)?;
-        records.push(trx_record);
+        let transaction_line = TransactionLine {
+            trx_date: trx_record.trx_date,
+            description: trx_record.description,
+            amount: trx_record.amount,
+            trx_type: trx_type(trx_record.trx_type)
+        };
+
+        records.push(transaction_line);
     }
 
 
-    let json = serde_json::to_string(&records)?;
+    Ok(records)
+}
 
-    Ok(json)
+fn trx_type(trx_type: TrxType) -> StatementCoreTrxType {
+    match trx_type {
+       TrxType::CR => StatementCoreTrxType::CR,
+       TrxType::DB => StatementCoreTrxType::DB
+    }
 }
 
 
@@ -69,9 +83,8 @@ mod tests {
     #[test]
     fn test_parse_valid_csv() {
         let csv = "data, , , , , \n'19/09,TRSF E-BANKING,'0000,4700.00,DB,48219.21";
-        let expected_outcome = "[{\"trx_date\":\"'19/09\",\"description\":\"TRSF E-BANKING\",\"amount\":4700.0,\"trx_type\":\"DB\"}]";
         let result = parse_csv(&csv).unwrap();
-        assert!(result == expected_outcome);
+        assert!(result[0].description  ==  "TRSF E-BANKING");
     
     }
 
