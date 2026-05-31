@@ -21,8 +21,9 @@ fn read_statement_file(app_handle: AppHandle, filepath: String) -> Result<String
         }
         "pdf" => {
             let transactions =
-                bca_pdf::parse_pdf_file(&filepath).map_err(|error| error.to_string())?;
-            insert_transactions(app_handle, &transactions)
+                bca_pdf::parse_pdf_file_to_statement(&filepath).map_err(|error| error.to_string())?;
+            println!("Transaction {:?}", transactions);
+            insert_transactions(app_handle, &transactions.transactions)
         }
         _ => Err(format!("Unsupported statement file type: {extension}")),
     }

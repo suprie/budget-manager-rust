@@ -8,7 +8,8 @@ type Transaction = {
   trx_date: string;
   description: string;
   amount: number;
-  trx_type: "CR" | "DB"
+  trx_type: "CR" | "DB";
+  posted_date: date
 }
 
 type TransactionSummary = {
@@ -27,6 +28,7 @@ const transactionSummary = ref<TransactionSummary>();
     { title: "Description", dataIndex: "description", key: "description" },
     { title: "Amount", dataIndex: "amount", key: "amount" },
     { title: "Type", dataIndex: "trx_type", key: "trx_type" },
+    { title: "Posted Date", dataIndex: "posted_date", key: "trx_type" },
   ];
 
   const formatAmount = new Intl.NumberFormat("id-ID", {

@@ -1,12 +1,14 @@
 use statement_core::{TransactionLine, TrxType};
 use rusqlite::{params, Connection};
+use chrono::NaiveDate;
 
 #[derive(Debug, serde::Serialize)]
 pub struct StoredTransaction {
     trx_date: String,
     description: String,
     amount: f64,
-    trx_type: String
+    trx_type: String,
+    posted_date: Option<NaiveDate>
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -21,23 +23,25 @@ pub fn insert_transactions(
     transactions: &[TransactionLine],
 ) -> Result<usize, String> {
     let tx = conn.transaction().map_err(|error| error.to_string())?;
-
     {
+        println!("LINE : {:?}", transactions);
         let mut stmt = tx
             .prepare(
                 "
-                INSERT OR IGNORE INTO transactions (trx_date, description, amount, trx_type)
-                VALUES (?1, ?2, ?3, ?4)
+                INSERT OR IGNORE INTO transactions (trx_date, description, amount, trx_type, posted_date)
+                VALUES (?1, ?2, ?3, ?4, ?5)
             ",
             )
             .map_err(|error| error.to_string())?;
 
         for transaction in transactions {
+            println!("SQL : {:?}", stmt.expanded_sql());
             stmt.execute(params![
                 transaction.trx_date,
                 transaction.description,
                 transaction.amount,
-                trx_type_as_str(&transaction.trx_type)
+                trx_type_as_str(&transaction.trx_type),
+                transaction.posted_date
             ])
             .map_err(|error| error.to_string())?;
         }
@@ -47,13 +51,14 @@ pub fn insert_transactions(
 } 
 
 pub fn load_data(conn: &mut Connection) -> Result<TransactionSummary, String> {
-    let mut stmt = conn.prepare("SELECT trx_date, description, amount, trx_type from transactions").map_err(|error| error.to_string())?;
+    let mut stmt = conn.prepare("SELECT trx_date, description, amount, trx_type, posted_date from transactions").map_err(|error| error.to_string())?;
     let iter = stmt.query_map([], |row| {
         Ok(StoredTransaction {
             trx_date: row.get(0)?,
             description: row.get(1)?,
             amount: row.get(2)?,
             trx_type: row.get(3)?,
+            posted_date: row.get(4)?
         })
     }).map_err(|error| error.to_string())?;
 
@@ -65,29 +70,30 @@ pub fn load_data(conn: &mut Connection) -> Result<TransactionSummary, String> {
         println!("row {:?}", temp_row);
 
         if temp_row.trx_type == "CR" {
-            total_income = total_income + temp_row.amount
+            total_income += temp_row.amount
         } else {
-            total_expenses = total_expenses + temp_row.amount
+            total_expenses += temp_row.amount
         }
         transactions.push(temp_row);
     }
 
     Ok(TransactionSummary {
-        total_income: total_income,
-        total_expenses: total_expenses,
+        total_income,
+        total_expenses,
         transactions
     })
 
 }
 
 pub fn read_all_transactions(conn: &mut Connection) -> Result<Vec<StoredTransaction>, String> {
-    let mut stmt = conn.prepare("SELECT trx_date, description, amount, trx_type from transactions").map_err(|error| error.to_string())?;
+    let mut stmt = conn.prepare("SELECT trx_date, description, amount, trx_type, posted_date from transactions").map_err(|error| error.to_string())?;
     let iter = stmt.query_map([], |row| {
         Ok(StoredTransaction {
             trx_date: row.get(0)?,
             description: row.get(1)?,
             amount: row.get(2)?,
             trx_type: row.get(3)?,
+            posted_date: row.get(4)?
         })
     }).map_err(|error| error.to_string())?;
 

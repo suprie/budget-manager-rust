@@ -1,6 +1,6 @@
 use std::error::Error;
 use std::env;
-use bca_pdf::parse_pdf_file;
+use bca_pdf::parse_pdf_file_to_statement;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
@@ -9,8 +9,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let file_path = &args[1];
-    let transaction_line = parse_pdf_file(&file_path).unwrap(); 
-    for i in transaction_line.iter() {
+    let transaction_line = parse_pdf_file_to_statement(&file_path).unwrap(); 
+    println!("{:?}", transaction_line.account_number);
+    println!("{:?}", transaction_line.period);
+
+    for i in transaction_line.transactions.iter() {
         println!("{:?}",i);
     } 
     Ok(())

@@ -47,7 +47,8 @@ fn parse_csv(csv_content: &str) -> Result<Vec<TransactionLine>, Box<dyn Error>> 
             trx_date: trx_record.trx_date,
             description: trx_record.description,
             amount: trx_record.amount,
-            trx_type: trx_type(trx_record.trx_type)
+            trx_type: trx_type(trx_record.trx_type),
+            posted_date: None
         };
 
         records.push(transaction_line);

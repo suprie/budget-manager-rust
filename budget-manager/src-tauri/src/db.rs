@@ -48,6 +48,7 @@ fn migrate_database(conn: &Connection) -> Result<(), String> {
                   description TEXT NOT NULL,
                   amount REAL NOT NULL,
                   trx_type TEXT NOT NULL,
+                  posted_date TEXT NULL,
                   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                   UNIQUE (trx_date, description, amount, trx_type)
               );

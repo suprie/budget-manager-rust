@@ -1,22 +1,32 @@
 # TODO
 
-## Parse period + account number from CSV/PDF
+## ~~Parse period + account number from CSV/PDF~~ (partially done)
 
-Currently `parse_csv_file()` and `parse_pdf_file()` return `Vec<TransactionLine>`. Change them to return a struct that wraps the transactions with statement metadata.
+Previously `parse_csv_file()` and `parse_pdf_file()` returned `Vec<TransactionLine>`. Changed to return a struct that wraps the transactions with statement metadata.
 
-### Steps
+### Done
+- [x] `SummaryTransaction` added to `statement-core` with `account_number`, `period`, `transactions`
+- [x] `TransactionLine.posted_date: Option<NaiveDate>` added
+- [x] PDF parser: `parse_pdf_file_to_statement()` extracts account number and period year, populates `posted_date`
+- [x] `chrono` dependency wired across workspace
+- [x] DB migration adds `posted_date TEXT NULL` column
+- [x] `rusqlite` updated with `chrono` feature for `NaiveDate` ↔ SQLite binding
+- [x] `StoredTransaction.posted_date: Option<NaiveDate>` synced with DB
 
-1. **Add `StatementSummary` to `statement-core`:**
-   ```rust
-   pub struct StatementSummary {
-       pub account_number: String,
-       pub period: String,
-       pub transactions: Vec<TransactionLine>,
-   }
-   ```
+### Remaining
+- [ ] **CSV parser** — extract period + account number from header lines (currently `println!`-ed then skipped). Populate `posted_date` instead of hardcoding `None`.
+- [ ] **Drop `period: String`** from `SummaryTransaction` — can be inferred from `MIN(posted_date)` / `MAX(posted_date)`. Decided to drop, not yet removed.
 
-2. **Update `bca-csv`** — extract account number and period from the header lines (currently just `println!`-ed and skipped) and footer lines. Return `StatementSummary` instead of `Vec<TransactionLine>`.
+## New TODO
 
-3. **Update `bca-pdf`** — same idea, but from PDF-specific header/footer. The summary lines (`SALDO`, `MUTASI`) that are currently skipped are the right place to look.
+### Fix App.vue bugs
+- [ ] **Line 12**: `posted_date: date` → `posted_date: string | null` (`date` is not a valid TypeScript type; `NaiveDate` serializes to string from Rust)
+- [ ] **Line 31**: `key: "trx_type"` is duplicate of line 30. Change to `key: "posted_date"`
 
-4. **Update `transactions.rs` / `lib.rs`** in the Tauri app so it works with the new return type.
+### bca-pdf cleanup
+- [ ] **Old `parse_pdf_file()` / `parse_to_transaction_line()`** — dead code now, only called from their own tests. Remove after confirming `parse_pdf_file_to_statement` is stable.
+- [ ] **Silent data loss in `parse_to_transaction_line_date`** — if `year` is empty string (period not parsed yet), `"22/01/"` parse fails silently and `posted_date` becomes `None`. Should at minimum `eprintln!` a warning.
+- [ ] **Missing test** for `parse_to_transaction_line_date` — happy path with year, and PEND → `posted_date: None`.
+
+### Cleanup
+- [ ] **Debug `println!`** — remove from `lib.rs:26` and `transactions.rs:27,39` once feature is stable. Replace with a proper logging crate (`log` + `env_logger` or `tracing`).
