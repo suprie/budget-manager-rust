@@ -5,7 +5,8 @@ use chrono::NaiveDate;
 #[derive(Debug, serde::Serialize)]
 pub struct Category {
     id: i64,
-    category_name: String
+    category_name: String,
+    color: String,
 }
 
 
@@ -63,8 +64,9 @@ pub fn insert_transactions(
 
 pub fn load_data(conn: &mut Connection) -> Result<TransactionSummary, String> {
     let mut stmt = conn.prepare(
-        "SELECT t.id, t.line, t.trx_date, t.description, t.amount, t.trx_type, t.posted_date, t.source, 
-        c.id AS category_id, c.category_name AS category_name from transactions t LEFT JOIN categories c ON t.category_id = c.id"
+        "SELECT t.id, t.line, t.trx_date, t.description, t.amount, t.trx_type, t.posted_date, t.source,
+        c.id AS category_id, c.category_name AS category_name, c.color AS category_color
+         FROM transactions t LEFT JOIN categories c ON t.category_id = c.id"
     ).map_err(|error| error.to_string())?;
    
     let iter = stmt.query_map([], |row| {
@@ -77,9 +79,10 @@ pub fn load_data(conn: &mut Connection) -> Result<TransactionSummary, String> {
             trx_type: row.get("trx_type")?,
             posted_date: row.get("posted_date")?,
             source: row.get("source")?,
-            category: Category { 
-                id: row.get("category_id")?, 
-                category_name: row.get("category_name")? 
+            category: Category {
+                id: row.get("category_id")?,
+                category_name: row.get("category_name")?,
+                color: row.get("category_color")?,
             }
         })
     }).map_err(|error| error.to_string())?;

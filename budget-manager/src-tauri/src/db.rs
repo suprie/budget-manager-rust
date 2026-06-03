@@ -36,7 +36,7 @@ fn database_path(app: AppHandle) -> Result<PathBuf, String> {
 }
 
 fn migrate_database(conn: &Connection) -> Result<(), String> {
-    let target_version: i64 = 2;
+    let target_version: i64 = 3;
     let mut current: i64 = conn
         .query_row("PRAGMA user_version", [], |row| row.get(0))
         .map_err(|error| error.to_string())?;
@@ -79,6 +79,15 @@ fn migrate_database(conn: &Connection) -> Result<(), String> {
                 )
                 .map_err(|error| error.to_string())?;
                 current = 2;
+            }
+            2 => {
+                conn.execute_batch(
+                    "
+                    ALTER TABLE categories ADD COLUMN color TEXT NOT NULL DEFAULT '#6d7a77';
+                    ",
+                )
+                .map_err(|error| error.to_string())?;
+                current = 3;
             }
             _ => break,
         }
