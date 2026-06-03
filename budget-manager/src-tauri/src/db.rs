@@ -4,11 +4,12 @@ use std::path::Path;
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
+
 pub fn open_database(app_handle: AppHandle) -> Result<Connection, String> {
     let path = database_path(app_handle)?;
     let conn = Connection::open(path).map_err(|_| "unable to open the file".to_string())?;
 
-    let _ = migrate_database(&conn)?;
+    migrate_database(&conn)?;
     Ok(conn)
 }
 
@@ -35,34 +36,55 @@ fn database_path(app: AppHandle) -> Result<PathBuf, String> {
 }
 
 fn migrate_database(conn: &Connection) -> Result<(), String> {
-    let version: i64 = conn
+    let target_version: i64 = 2;
+    let mut current: i64 = conn
         .query_row("PRAGMA user_version", [], |row| row.get(0))
         .map_err(|error| error.to_string())?;
 
-    if version < 1 {
-        conn.execute_batch(
-            "
-              CREATE TABLE transactions (
-                  id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  line INTEGER,
-                  trx_date TEXT NOT NULL,
-                  description TEXT NOT NULL,
-                  amount REAL NOT NULL,
-                  trx_type TEXT NOT NULL,
-                  posted_date TEXT NULL,
-                  source TEXT NOT NULL,
-                  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                  UNIQUE (line, trx_date, description, amount, trx_type)
-              );
+    while current < target_version {
+        match current {
+            0 => {
+                conn.execute_batch(
+                    "
+                    CREATE TABLE transactions (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        line INTEGER,
+                        trx_date TEXT NOT NULL,
+                        description TEXT NOT NULL,
+                        amount REAL NOT NULL,
+                        trx_type TEXT NOT NULL,
+                        posted_date TEXT NULL,
+                        source TEXT NOT NULL,
+                        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE (line, trx_date, description, amount, trx_type)
+                    );
+                    ",
+                )
+                .map_err(|error| error.to_string())?;
+                current = 1;
+            }
+            1 => {
+                conn.execute_batch(
+                    "
+                    CREATE TABLE categories (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        category_name TEXT NOT NULL
+                    );
 
-              PRAGMA user_version = 1;
-              ",
-        )
-        .map_err(|error| error.to_string())?;
-
-        println!("Migration completed");
-    } else {
-        println!("DB already migrated");
+                    INSERT OR IGNORE INTO categories (id, category_name)
+                        VALUES (1, 'unknown');
+                    
+                    ALTER TABLE transactions ADD COLUMN category_id INTEGER DEFAULT 1;
+                    "
+                )
+                .map_err(|error| error.to_string())?;
+                current = 2;
+            }
+            _ => break,
+        }
+        conn.pragma_update(None, "user_version", current)
+            .map_err(|error| error.to_string())?;
+        println!("Migrated to version {}", current);
     }
 
     Ok(())

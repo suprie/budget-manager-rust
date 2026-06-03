@@ -3,13 +3,19 @@ import { onMounted, ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 
+type Category = {
+  id: number,
+  category_name: string
+}
+
 type Transaction = {
   id: number;
   trx_date: string;
   description: string;
   amount: number;
   trx_type: "CR" | "DB";
-  posted_date: date | null
+  posted_date: string | null;
+  category: Category
 }
 
 type TransactionSummary = {
@@ -24,11 +30,23 @@ const transactions = ref<Transaction[]>([]);
 const transactionSummary = ref<TransactionSummary>();
 const showCSVForm = ref(false);
 const csvYear = ref(new Date().getFullYear());
+const categoryColors: Record<string, string> = {
+    unknown: "#d9d9d9",
+    groceries: "green",
+    transport: "blue",
+    dining: "orange",
+    // ... more as you add categories
+  };
+
+  function categoryColor(name: string): string {
+    return categoryColors[name] ?? "default";
+  }
 
 const columns = [
   { title: "Date", dataIndex: "trx_date", key: "trx_date" },
   { title: "Description", dataIndex: "description", key: "description" },
   { title: "Amount", dataIndex: "amount", key: "amount" },
+  { title: "Category", dataIndex: "category.category_name", key: "category_name" },
   { title: "Type", dataIndex: "trx_type", key: "trx_type" },
   { title: "Posted Date", dataIndex: "posted_date", key: "posted_date" },
   { title: "Source", dataIndex: "source", key: "source" },
@@ -155,6 +173,12 @@ onMounted(loadTransaction);
         <span v-else-if="column.dataIndex === 'trx_type'" :class="['trx-type', record.trx_type.toLowerCase()]">
           {{ record.trx_type }}
         </span>
+       <span v-else-if="column.dataIndex === 'category.category_name'">
+       <a-tag :color="categoryColor(record.category.category_name)">
+          {{ record.category.category_name }}
+       </a-tag>
+      </span>
+
       </template>
     </a-table>
     <p v-if="errorMessage">{{errorMessage}}</p>

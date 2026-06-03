@@ -3,6 +3,13 @@ use rusqlite::{params, Connection};
 use chrono::NaiveDate;
 
 #[derive(Debug, serde::Serialize)]
+pub struct Category {
+    id: i64,
+    category_name: String
+}
+
+
+#[derive(Debug, serde::Serialize)]
 pub struct StoredTransaction {
     id: i64,
     line: usize,
@@ -11,7 +18,8 @@ pub struct StoredTransaction {
     amount: f64,
     trx_type: String,
     posted_date: Option<NaiveDate>,
-    source: String
+    source: String,
+    category: Category
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -54,17 +62,25 @@ pub fn insert_transactions(
 } 
 
 pub fn load_data(conn: &mut Connection) -> Result<TransactionSummary, String> {
-    let mut stmt = conn.prepare("SELECT id, line, trx_date, description, amount, trx_type, posted_date, source from transactions").map_err(|error| error.to_string())?;
+    let mut stmt = conn.prepare(
+        "SELECT t.id, t.line, t.trx_date, t.description, t.amount, t.trx_type, t.posted_date, t.source, 
+        c.id AS category_id, c.category_name AS category_name from transactions t LEFT JOIN categories c ON t.category_id = c.id"
+    ).map_err(|error| error.to_string())?;
+   
     let iter = stmt.query_map([], |row| {
         Ok(StoredTransaction {
-            id: row.get(0)?,
-            line: row.get(1)?,
-            trx_date: row.get(2)?,
-            description: row.get(3)?,
-            amount: row.get(4)?,
-            trx_type: row.get(5)?,
-            posted_date: row.get(6)?,
-            source: row.get(7)?
+            id: row.get("id")?,
+            line: row.get("line")?,
+            trx_date: row.get("trx_date")?,
+            description: row.get("description")?,
+            amount: row.get("amount")?,
+            trx_type: row.get("trx_type")?,
+            posted_date: row.get("posted_date")?,
+            source: row.get("source")?,
+            category: Category { 
+                id: row.get("category_id")?, 
+                category_name: row.get("category_name")? 
+            }
         })
     }).map_err(|error| error.to_string())?;
 
@@ -87,31 +103,6 @@ pub fn load_data(conn: &mut Connection) -> Result<TransactionSummary, String> {
         total_expenses,
         transactions
     })
-
-}
-
-pub fn read_all_transactions(conn: &mut Connection) -> Result<Vec<StoredTransaction>, String> {
-    let mut stmt = conn.prepare("SELECT id, line, trx_date, description, amount, trx_type, posted_date, source from transactions").map_err(|error| error.to_string())?;
-    let iter = stmt.query_map([], |row| {
-        Ok(StoredTransaction {
-            id: row.get(0)?,
-            line: row.get(1)?,
-            trx_date: row.get(2)?,
-            description: row.get(3)?,
-            amount: row.get(4)?,
-            trx_type: row.get(5)?,
-            posted_date: row.get(6)?,
-            source: row.get(7)?
-        })
-    }).map_err(|error| error.to_string())?;
-
-    let mut transactions = Vec::new();
-
-    for row in iter {
-        transactions.push(row.map_err(|error| error.to_string())?);
-    }
-
-    Ok(transactions)
 
 }
 

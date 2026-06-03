@@ -32,14 +32,6 @@ fn load_transactions(app_handle: AppHandle) -> Result<transactions::TransactionS
     Ok(result)
 }
 
-#[tauri::command]
-fn list_transactions(app_handle: AppHandle) -> Result<Vec<transactions::StoredTransaction>, String> {
-   let mut conn = db::open_database(app_handle)?;
-   let result = transactions::read_all_transactions(&mut conn)?;
-
-   Ok(result)
-}
-
 fn insert_transactions(app_handle: AppHandle, transactions: &[TransactionLine]) -> Result<String, String> {
     let mut conn = db::open_database(app_handle)?;
     let size = transactions::insert_transactions(&mut conn, transactions)?;
@@ -55,7 +47,6 @@ pub fn run() {
             read_statement_file,
             read_csv_statement_file,
             reset_db,
-            list_transactions,
             load_transactions
         ])
         .run(tauri::generate_context!())
