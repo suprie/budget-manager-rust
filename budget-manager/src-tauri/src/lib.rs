@@ -1,5 +1,4 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-use std::path::Path;
 use tauri::AppHandle;
 use statement_core:: TransactionLine;
 
@@ -8,25 +7,16 @@ mod transactions;
 
 #[tauri::command]
 fn read_statement_file(app_handle: AppHandle, filepath: String) -> Result<String, String> {
-    let extension = Path::new(&filepath)
-        .extension()
-        .and_then(|extension| extension.to_str())
-        .map(|extension| extension.to_lowercase())
-        .ok_or_else(|| "Selected file has no extension".to_string())?;
-    match extension.as_str() {
-        "csv" => {
-            let transactions = bca_csv::parse_csv_file(&filepath).map_err(|error| error.to_string())?;
-            println!("tranactions {:?}",transactions);
-            insert_transactions(app_handle, &transactions)
-        }
-        "pdf" => {
-            let transactions =
-                bca_pdf::parse_pdf_file_to_statement(&filepath).map_err(|error| error.to_string())?;
-            println!("Transaction {:?}", transactions);
-            insert_transactions(app_handle, &transactions.transactions)
-        }
-        _ => Err(format!("Unsupported statement file type: {extension}")),
-    }
+    let transactions =
+        bca_pdf::parse_pdf_file_to_statement(&filepath).map_err(|error| error.to_string())?;
+    insert_transactions(app_handle, &transactions.transactions)
+}
+
+#[tauri::command]
+fn read_csv_statement_file(app_handle: AppHandle, filepath: String, year: i32) -> Result<String, String> {
+    let transactions =
+        bca_csv::parse_csv_file(&filepath, year).map_err(|error| error.to_string())?;
+    insert_transactions(app_handle, &transactions)
 }
 
 fn insert_transactions(app_handle: AppHandle, transactions: &Vec<TransactionLine>) -> Result<String, String> {
@@ -66,6 +56,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             read_statement_file,
+            read_csv_statement_file,
             reset_db,
             list_transactions,
             load_transactions

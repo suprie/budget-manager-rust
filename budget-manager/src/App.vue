@@ -22,27 +22,29 @@ const filePath = ref("");
 const errorMessage = ref("");
 const transactions = ref<Transaction[]>([]);
 const transactionSummary = ref<TransactionSummary>();
+const showCSVForm = ref(false);
+const csvYear = ref(new Date().getFullYear());
 
-  const columns = [
-    { title: "Date", dataIndex: "trx_date", key: "trx_date" },
-    { title: "Description", dataIndex: "description", key: "description" },
-    { title: "Amount", dataIndex: "amount", key: "amount" },
-    { title: "Type", dataIndex: "trx_type", key: "trx_type" },
-    { title: "Posted Date", dataIndex: "posted_date", key: "trx_type" },
-  ];
+const columns = [
+  { title: "Date", dataIndex: "trx_date", key: "trx_date" },
+  { title: "Description", dataIndex: "description", key: "description" },
+  { title: "Amount", dataIndex: "amount", key: "amount" },
+  { title: "Type", dataIndex: "trx_type", key: "trx_type" },
+  { title: "Posted Date", dataIndex: "posted_date", key: "trx_type" },
+];
 
-  const formatAmount = new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+const formatAmount = new Intl.NumberFormat("id-ID", {
+  style: "currency",
+  currency: "IDR",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 
 async function loadTransaction() {
   transactionSummary.value = await invoke<TransactionSummary>("load_transactions")
 }
 
-async function uploadFile() {
+async function uploadPDFFile() {
   errorMessage.value = "";
   filePath.value = "";
 
@@ -51,7 +53,7 @@ async function uploadFile() {
     filters: [
       {
         name: "Statement",
-        extensions: ["csv", "pdf"],
+        extensions: ["pdf"],
       },
     ],
   });
@@ -67,6 +69,44 @@ async function uploadFile() {
   try {
     filePath.value = await invoke<string>("read_statement_file", {
       filepath: selectedFile,
+    });
+    await loadTransaction();
+  } catch (error) {
+    errorMessage.value = String(error);
+  }
+}
+
+async function uploadCSVFile() {
+  errorMessage.value = "";
+  filePath.value = "";
+  showCSVForm.value = true;
+}
+
+async function submitCSVWithYear() {
+  showCSVForm.value = false;
+
+  const selectedFile = await open({
+    multiple: false,
+    filters: [
+      {
+        name: "Statement",
+        extensions: ["csv"],
+      },
+    ],
+  });
+
+  if (!selectedFile) {
+    return;
+  }
+
+  if (Array.isArray(selectedFile)) {
+    return;
+  }
+
+  try {
+    filePath.value = await invoke<string>("read_csv_statement_file", {
+      filepath: selectedFile,
+      year: csvYear.value,
     });
     await loadTransaction();
   } catch (error) {
@@ -94,8 +134,18 @@ onMounted(loadTransaction);
     </div>
 
     <div class="actions">
-      <a-button class="action-btn" @click="uploadFile">Pick Statement file</a-button>
+      <a-button class="action-btn" @click="uploadPDFFile">Pick Statement PDF file</a-button>
+      <a-button class="action-btn" @click="uploadCSVFile">Pick Statement CSV file</a-button>
       <a-button class="action-btn" @click="resetDB" :danger="true" :variant="solid">Reset Database</a-button>
+    </div>
+
+    <div v-if="showCSVForm" class="csv-form">
+      <label>
+        Year:
+        <input v-model.number="csvYear" type="number" min="2000" max="2099" />
+      </label>
+      <a-button class="action-btn" @click="submitCSVWithYear">Choose CSV File</a-button>
+      <a-button class="action-btn" @click="showCSVForm = false">Cancel</a-button>
     </div>
 
     <a-table v-if="transactionSummary?.transactions?.length" :data-source="transactionSummary.transactions" :columns="columns" rowKey="id">
@@ -135,6 +185,23 @@ onMounted(loadTransaction);
   justify-content: flex-end;
   gap: 0.5rem;
   margin-bottom: 1rem;
+}
+
+.csv-form {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.csv-form label {
+  font-weight: 500;
+}
+
+.csv-form input {
+  width: 80px;
+  margin-left: 0.25rem;
 }
 
 .action-btn {
