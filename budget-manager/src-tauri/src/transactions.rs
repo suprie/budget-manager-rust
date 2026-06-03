@@ -36,7 +36,18 @@ pub fn insert_transactions(
 ) -> Result<usize, String> {
     let tx = conn.transaction().map_err(|error| error.to_string())?;
     {
-        let mut stmt = tx
+        let mut update_pend = tx
+            .prepare(
+                "
+                UPDATE transactions
+                SET trx_date = ?1, posted_date = ?2
+                WHERE line = ?3 AND source = ?4 AND description = ?5
+                  AND amount = ?6 AND trx_type = ?7 AND trx_date = 'PEND'
+                ",
+            )
+            .map_err(|error| error.to_string())?;
+
+        let mut insert = tx
             .prepare(
                 "
                 INSERT OR IGNORE INTO transactions (line, trx_date, description, amount, trx_type, posted_date, source)
@@ -46,14 +57,30 @@ pub fn insert_transactions(
             .map_err(|error| error.to_string())?;
 
         for transaction in transactions {
-            stmt.execute(params![
+            let trx_type = trx_type_as_str(&transaction.trx_type);
+            let source = source_as_str(&transaction.source);
+
+            if transaction.trx_date != "PEND" {
+                update_pend.execute(params![
+                    transaction.trx_date,
+                    transaction.posted_date,
+                    transaction.line,
+                    source,
+                    transaction.description,
+                    transaction.amount,
+                    trx_type,
+                ])
+                .map_err(|error| error.to_string())?;
+            }
+
+            insert.execute(params![
                 transaction.line,
                 transaction.trx_date,
                 transaction.description,
                 transaction.amount,
-                trx_type_as_str(&transaction.trx_type),
+                trx_type,
                 transaction.posted_date,
-                source_as_str(&transaction.source)
+                source,
             ])
             .map_err(|error| error.to_string())?;
         }
