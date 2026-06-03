@@ -9,7 +9,7 @@ type Transaction = {
   description: string;
   amount: number;
   trx_type: "CR" | "DB";
-  posted_date: date
+  posted_date: date | null
 }
 
 type TransactionSummary = {
@@ -30,7 +30,8 @@ const columns = [
   { title: "Description", dataIndex: "description", key: "description" },
   { title: "Amount", dataIndex: "amount", key: "amount" },
   { title: "Type", dataIndex: "trx_type", key: "trx_type" },
-  { title: "Posted Date", dataIndex: "posted_date", key: "trx_type" },
+  { title: "Posted Date", dataIndex: "posted_date", key: "posted_date" },
+  { title: "Source", dataIndex: "source", key: "source" },
 ];
 
 const formatAmount = new Intl.NumberFormat("id-ID", {
@@ -156,9 +157,6 @@ onMounted(loadTransaction);
         </span>
       </template>
     </a-table>
-    <button  @click="resetDB">
-      Reset Database
-    </button>
     <p v-if="errorMessage">{{errorMessage}}</p>
   </main>
 </template>

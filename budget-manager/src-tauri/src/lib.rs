@@ -37,7 +37,6 @@ fn list_transactions(app_handle: AppHandle) -> Result<Vec<transactions::StoredTr
    let mut conn = db::open_database(app_handle)?;
    let result = transactions::read_all_transactions(&mut conn)?;
 
-   println!("Result {:?}",result);
    Ok(result)
 }
 

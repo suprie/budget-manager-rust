@@ -4,6 +4,7 @@ use chrono::NaiveDate;
 
 #[derive(Debug, serde::Serialize)]
 pub struct StoredTransaction {
+    id: i64,
     line: usize,
     trx_date: String,
     description: String,
@@ -26,7 +27,6 @@ pub fn insert_transactions(
 ) -> Result<usize, String> {
     let tx = conn.transaction().map_err(|error| error.to_string())?;
     {
-        println!("LINE : {:?}", transactions);
         let mut stmt = tx
             .prepare(
                 "
@@ -54,16 +54,17 @@ pub fn insert_transactions(
 } 
 
 pub fn load_data(conn: &mut Connection) -> Result<TransactionSummary, String> {
-    let mut stmt = conn.prepare("SELECT line, trx_date, description, amount, trx_type, posted_date, source from transactions").map_err(|error| error.to_string())?;
+    let mut stmt = conn.prepare("SELECT id, line, trx_date, description, amount, trx_type, posted_date, source from transactions").map_err(|error| error.to_string())?;
     let iter = stmt.query_map([], |row| {
         Ok(StoredTransaction {
-            line: row.get(0)?,
-            trx_date: row.get(1)?,
-            description: row.get(2)?,
-            amount: row.get(3)?,
-            trx_type: row.get(4)?,
-            posted_date: row.get(5)?,
-            source: row.get(6)?
+            id: row.get(0)?,
+            line: row.get(1)?,
+            trx_date: row.get(2)?,
+            description: row.get(3)?,
+            amount: row.get(4)?,
+            trx_type: row.get(5)?,
+            posted_date: row.get(6)?,
+            source: row.get(7)?
         })
     }).map_err(|error| error.to_string())?;
 
@@ -72,7 +73,6 @@ pub fn load_data(conn: &mut Connection) -> Result<TransactionSummary, String> {
     let mut total_expenses = 0.0;
     for row in iter {
         let temp_row = row.map_err(|error| error.to_string())?;
-        println!("row {:?}", temp_row);
 
         if temp_row.trx_type == "CR" {
             total_income += temp_row.amount
@@ -91,16 +91,17 @@ pub fn load_data(conn: &mut Connection) -> Result<TransactionSummary, String> {
 }
 
 pub fn read_all_transactions(conn: &mut Connection) -> Result<Vec<StoredTransaction>, String> {
-    let mut stmt = conn.prepare("SELECT line, trx_date, description, amount, trx_type, posted_date, source from transactions").map_err(|error| error.to_string())?;
+    let mut stmt = conn.prepare("SELECT id, line, trx_date, description, amount, trx_type, posted_date, source from transactions").map_err(|error| error.to_string())?;
     let iter = stmt.query_map([], |row| {
         Ok(StoredTransaction {
-            line: row.get(0)?,
-            trx_date: row.get(1)?,
-            description: row.get(2)?,
-            amount: row.get(3)?,
-            trx_type: row.get(4)?,
-            posted_date: row.get(5)?,
-            source: row.get(6)?
+            id: row.get(0)?,
+            line: row.get(1)?,
+            trx_date: row.get(2)?,
+            description: row.get(3)?,
+            amount: row.get(4)?,
+            trx_type: row.get(5)?,
+            posted_date: row.get(6)?,
+            source: row.get(7)?
         })
     }).map_err(|error| error.to_string())?;
 
@@ -121,8 +122,8 @@ fn trx_type_as_str(trx_type: &TrxType) -> &'static str {
       }
   }
 
-fn source_as_str(trx_type: &Source) -> &'static str {
-      match trx_type {
+fn source_as_str(source: &Source) -> &'static str {
+      match source {
           Source::PDF => "PDF",
           Source::CSV => "CSV"
       }
