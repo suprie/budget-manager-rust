@@ -19,12 +19,6 @@ fn read_csv_statement_file(app_handle: AppHandle, filepath: String, year: i32) -
     insert_transactions(app_handle, &transactions)
 }
 
-fn insert_transactions(app_handle: AppHandle, transactions: &Vec<TransactionLine>) -> Result<String, String> {
-    let mut conn = db::open_database(app_handle)?;
-    let size = transactions::insert_transactions(&mut conn, &transactions)?;
-    Ok(format!("Transaction Size {:?}",  size))
-}
-
 #[tauri::command]
 fn reset_db(app_handle: AppHandle) {
     let _ = db::reset_db(app_handle);
@@ -35,8 +29,7 @@ fn load_transactions(app_handle: AppHandle) -> Result<transactions::TransactionS
    let mut conn = db::open_database(app_handle)?;
    let result = transactions::load_data(&mut conn)?;
 
-   println!("Result {:?}",result);
-   return Ok(result)
+    Ok(result)
 }
 
 #[tauri::command]
@@ -45,9 +38,14 @@ fn list_transactions(app_handle: AppHandle) -> Result<Vec<transactions::StoredTr
    let result = transactions::read_all_transactions(&mut conn)?;
 
    println!("Result {:?}",result);
-   return Ok(result)
+   Ok(result)
 }
 
+fn insert_transactions(app_handle: AppHandle, transactions: &[TransactionLine]) -> Result<String, String> {
+    let mut conn = db::open_database(app_handle)?;
+    let size = transactions::insert_transactions(&mut conn, transactions)?;
+    Ok(format!("Transaction Size {:?}",  size))
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

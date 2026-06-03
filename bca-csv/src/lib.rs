@@ -3,7 +3,7 @@ use csv::{Reader, StringRecord};
 
 use std::error::Error;
 use serde::{Serialize, Deserialize};
-use statement_core:: { TransactionLine, TrxType as StatementCoreTrxType };
+use statement_core:: { TransactionLine, TrxType as StatementCoreTrxType, Source };
 use chrono::NaiveDate;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -41,18 +41,19 @@ fn parse_csv(csv_content: &str, year: i32) -> Result<Vec<TransactionLine>, Box<d
 
     let mut records:Vec<TransactionLine> = Vec::new();
 
-    for result in rdr.records() {
+    for (index, result) in rdr.records().enumerate() {
         let record: StringRecord = result?;
         let trx_record: TrxRecord = record.deserialize(None)?;
         let posted_date = parse_date(&trx_record.trx_date, year);
         let transaction_line = TransactionLine {
+            line: index,
             trx_date: trx_record.trx_date,
             description: trx_record.description,
             amount: trx_record.amount,
             trx_type: trx_type(trx_record.trx_type),
-            posted_date
+            posted_date,
+            source: Source::CSV
         };
-
         records.push(transaction_line);
     }
 

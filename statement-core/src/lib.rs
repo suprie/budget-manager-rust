@@ -13,13 +13,22 @@ pub enum TrxType {
     DB,
 }
 
+#[derive(Debug, PartialEq)]
+pub enum Source {
+    PDF,
+    CSV,
+}
+
+
 #[derive(Debug)]
 pub struct TransactionLine {
+    pub line: usize,
     pub trx_date: String,
     pub description: String,
     pub amount: f64,
     pub trx_type: TrxType,
-    pub posted_date: Option<NaiveDate>
+    pub posted_date: Option<NaiveDate>,
+    pub source: Source
 }
 
 

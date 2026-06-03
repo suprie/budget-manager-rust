@@ -44,13 +44,15 @@ fn migrate_database(conn: &Connection) -> Result<(), String> {
             "
               CREATE TABLE transactions (
                   id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  line INTEGER,
                   trx_date TEXT NOT NULL,
                   description TEXT NOT NULL,
                   amount REAL NOT NULL,
                   trx_type TEXT NOT NULL,
                   posted_date TEXT NULL,
+                  source TEXT NOT NULL,
                   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                  UNIQUE (trx_date, description, amount, trx_type)
+                  UNIQUE (line, trx_date, description, amount, trx_type)
               );
 
               PRAGMA user_version = 1;
