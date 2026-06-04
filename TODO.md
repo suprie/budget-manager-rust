@@ -13,13 +13,12 @@
 - [x] Debug `println!` cleanup
 - [x] Migration refactored to `match` + loop pattern
 - [x] Categories scaffold: `categories` table, `category_id` FK, JOIN on load, `<a-tag>` in frontend
+- [x] Categories CRUD: `get_all_categories`, `create_category(name, color)`, `get_uncategorized_transactions(keyword)`, `bulk_assign_category(ids, category_id)`
+- [x] CategoriesPage UI: add-category form with preset + custom color picker, bulk-assign table with keyword search
+- [x] Dashboard inline category reassign: click tag → popover → pick new category
+- [x] Query limits: `load_transactions` with `LIMIT/OFFSET` + `total_count` for server-side pagination; `get_uncategorized_transactions` capped at 200 rows
 
 ## Remaining
-
-### Categories — CRUD + editing
-
-- [ ] **Rust commands**: `list_categories`, `create_category`, `update_transaction_category` (single + bulk)
-- [ ] **Frontend inline edit**: click category tag → dropdown picker → save via Tauri command
 
 ### bca-pdf
 
@@ -29,6 +28,10 @@
 ### CSV parser
 
 - [ ] **Extract account number** from header lines (currently `println!`-ed then skipped)
+
+### Categories — pagination polish
+
+- [ ] `get_uncategorized_transactions` — return `total_count` so the bulk-assign table can show full pagination instead of a hard 200-row cap
 
 ### Cleanup
 

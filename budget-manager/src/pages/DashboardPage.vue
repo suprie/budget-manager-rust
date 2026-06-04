@@ -11,6 +11,10 @@ const transactionSummary = ref<TransactionSummary>();
 const showCSVForm = ref(false);
 const csvYear = ref(new Date().getFullYear());
 
+// ── Pagination ──────────────────────────────────────────────────────
+const pageSize = ref(50);
+const currentPage = ref(1);
+
 // ── Inline category edit ───────────────────────────────────────────
 const categories = ref<Category[]>([]);
 const editingTxId = ref<number | null>(null);
@@ -50,7 +54,17 @@ const columns = [
 ];
 
 async function loadTransaction() {
-  transactionSummary.value = await invoke<TransactionSummary>("load_transactions");
+  const offset = (currentPage.value - 1) * pageSize.value;
+  transactionSummary.value = await invoke<TransactionSummary>("load_transactions", {
+    limit: pageSize.value,
+    offset,
+  });
+}
+
+function handlePageChange(page: number, size: number) {
+  currentPage.value = page;
+  pageSize.value = size;
+  loadTransaction();
 }
 
 async function uploadPDFFile() {
@@ -166,6 +180,15 @@ onMounted(() => {
         :data-source="transactionSummary.transactions"
         :columns="columns"
         rowKey="id"
+        :pagination="{
+          current: currentPage,
+          pageSize: pageSize,
+          total: transactionSummary.total_count,
+          showSizeChanger: true,
+          pageSizeOptions: ['25', '50', '100'],
+          onChange: handlePageChange,
+          onShowSizeChange: handlePageChange,
+        }"
       >
         <template #bodyCell="{ column, record }">
           <span v-if="column.dataIndex == 'amount'" class="amount-cell" :class="record.trx_type.toLowerCase()">

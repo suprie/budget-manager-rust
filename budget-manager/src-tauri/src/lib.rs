@@ -26,9 +26,13 @@ fn reset_db(app_handle: AppHandle) {
 }
 
 #[tauri::command]
-fn load_transactions(app_handle: AppHandle) -> Result<transactions::TransactionSummary, String> {
+fn load_transactions(
+    app_handle: AppHandle,
+    limit: i64,
+    offset: i64,
+) -> Result<transactions::TransactionSummary, String> {
    let mut conn = db::open_database(app_handle)?;
-   let result = transactions::load_data(&mut conn)?;
+   let result = transactions::load_data(&mut conn, limit, offset)?;
 
     Ok(result)
 }
@@ -53,9 +57,11 @@ fn create_category(
 fn get_uncategorized_transactions(
     app_handle: AppHandle,
     keyword: String,
+    limit: i64,
+    offset: i64,
 ) -> Result<Vec<categories::UncategorizedTransaction>, String> {
     let mut conn = db::open_database(app_handle)?;
-    categories::get_uncategorized_transactions(&mut conn, &keyword)
+    categories::get_uncategorized_transactions(&mut conn, &keyword, limit, offset)
 }
 
 #[tauri::command]

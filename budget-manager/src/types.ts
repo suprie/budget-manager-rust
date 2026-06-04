@@ -17,5 +17,6 @@ export type Transaction = {
 export type TransactionSummary = {
   total_income: number;
   total_expenses: number;
+  total_count: number;
   transactions: Transaction[];
 };

@@ -93,6 +93,7 @@ const targetCategoryId = ref<number | null>(null);
 const uncategorizedTxns = ref<BackendUncategorized[]>([]);
 const txLoading = ref(false);
 const assigning = ref(false);
+const UNCATEGORIZED_LIMIT = 200;
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -101,7 +102,7 @@ async function loadUncategorized(kw: string) {
   try {
     uncategorizedTxns.value = await invoke<BackendUncategorized[]>(
       "get_uncategorized_transactions",
-      { keyword: kw }
+      { keyword: kw, limit: UNCATEGORIZED_LIMIT, offset: 0 }
     );
   } catch (e) {
     console.error("Failed to load uncategorized transactions:", e);

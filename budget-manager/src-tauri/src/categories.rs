@@ -65,38 +65,42 @@ pub fn create_category(
 pub fn get_uncategorized_transactions(
     conn: &Connection,
     keyword: &str,
+    limit: i64,
+    offset: i64,
 ) -> Result<Vec<UncategorizedTransaction>, String> {
-    let sql = if keyword.is_empty() {
+    let base =
         "SELECT t.id, t.trx_date, t.description, t.amount, t.trx_type,
                 t.posted_date, t.source,
                 c.id AS cat_id, c.category_name, c.color
          FROM transactions t
          LEFT JOIN categories c ON t.category_id = c.id
-         WHERE t.category_id = 1
-         ORDER BY t.trx_date DESC"
-            .to_string()
-    } else {
-        format!(
-            "SELECT t.id, t.trx_date, t.description, t.amount, t.trx_type,
-                    t.posted_date, t.source,
-                    c.id AS cat_id, c.category_name, c.color
-             FROM transactions t
-             LEFT JOIN categories c ON t.category_id = c.id
-             WHERE t.category_id = 1
-               AND t.description LIKE '%' || ?1 || '%'
-             ORDER BY t.trx_date DESC"
-        )
-    };
+         WHERE t.category_id = 1";
+
+    let (sql, params_slice): (String, Vec<Box<dyn rusqlite::types::ToSql>>) =
+        if keyword.is_empty() {
+            (
+                format!(
+                    "{} ORDER BY t.trx_date DESC LIMIT ?1 OFFSET ?2",
+                    base
+                ),
+                vec![Box::new(limit), Box::new(offset)],
+            )
+        } else {
+            (
+                format!(
+                    "{} AND t.description LIKE '%' || ?1 || '%' ORDER BY t.trx_date DESC LIMIT ?2 OFFSET ?3",
+                    base
+                ),
+                vec![Box::new(keyword.to_string()), Box::new(limit), Box::new(offset)],
+            )
+        };
 
     let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
+    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params_slice.iter().map(|p| p.as_ref()).collect();
 
-    let rows = if keyword.is_empty() {
-        stmt.query_map([], row_to_uncategorized)
-            .map_err(|e| e.to_string())?
-    } else {
-        stmt.query_map(params![keyword], row_to_uncategorized)
-            .map_err(|e| e.to_string())?
-    };
+    let rows = stmt
+        .query_map(param_refs.as_slice(), row_to_uncategorized)
+        .map_err(|e| e.to_string())?;
 
     rows.collect::<Result<Vec<_>, _>>()
         .map_err(|e| e.to_string())
