@@ -2,6 +2,7 @@
 use tauri::AppHandle;
 use statement_core:: TransactionLine;
 
+mod categories;
 mod db;
 mod transactions;
 
@@ -32,6 +33,41 @@ fn load_transactions(app_handle: AppHandle) -> Result<transactions::TransactionS
     Ok(result)
 }
 
+#[tauri::command]
+fn get_all_categories(app_handle: AppHandle) -> Result<Vec<categories::Category>, String> {
+    let mut conn = db::open_database(app_handle)?;
+    categories::get_all_categories(&mut conn)
+}
+
+#[tauri::command]
+fn create_category(
+    app_handle: AppHandle,
+    category_name: String,
+    color: String,
+) -> Result<categories::Category, String> {
+    let mut conn = db::open_database(app_handle)?;
+    categories::create_category(&mut conn, &category_name, &color)
+}
+
+#[tauri::command]
+fn get_uncategorized_transactions(
+    app_handle: AppHandle,
+    keyword: String,
+) -> Result<Vec<categories::UncategorizedTransaction>, String> {
+    let mut conn = db::open_database(app_handle)?;
+    categories::get_uncategorized_transactions(&mut conn, &keyword)
+}
+
+#[tauri::command]
+fn bulk_assign_category(
+    app_handle: AppHandle,
+    transaction_ids: Vec<i64>,
+    category_id: i64,
+) -> Result<usize, String> {
+    let mut conn = db::open_database(app_handle)?;
+    categories::bulk_assign_category(&mut conn, &transaction_ids, category_id)
+}
+
 fn insert_transactions(app_handle: AppHandle, transactions: &[TransactionLine]) -> Result<String, String> {
     let mut conn = db::open_database(app_handle)?;
     let size = transactions::insert_transactions(&mut conn, transactions)?;
@@ -47,7 +83,11 @@ pub fn run() {
             read_statement_file,
             read_csv_statement_file,
             reset_db,
-            load_transactions
+            load_transactions,
+            get_all_categories,
+            create_category,
+            get_uncategorized_transactions,
+            bulk_assign_category
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

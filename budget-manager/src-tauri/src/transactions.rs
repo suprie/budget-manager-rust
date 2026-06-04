@@ -1,14 +1,7 @@
 use statement_core::{Source, TransactionLine, TrxType};
 use rusqlite::{params, Connection};
 use chrono::NaiveDate;
-
-#[derive(Debug, serde::Serialize)]
-pub struct Category {
-    id: i64,
-    category_name: String,
-    color: String,
-}
-
+use crate::categories::Category;
 
 #[derive(Debug, serde::Serialize)]
 pub struct StoredTransaction {
